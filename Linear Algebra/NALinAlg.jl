@@ -1,67 +1,97 @@
-# Many of these functions are already implemented, probably already in much better ways.
+module NALinAlg
+# Many of these functions are already implemented, probably already in much better ways... We start by implementing them in the naive way and try to
+# Find better ways of doing the same procedure.
+
 using LinearAlgebra
+function EliminateRow(i,j, A::AbstractArray)
+    pivot = A[i,i]
+    target = A[j,i]
+    multiplier =  target/pivot
 
-function NaiveGaussJordan(A::AbstractArray)
-    #Checking for square matrix
-    if size(A)(1) == size(A)(2)
-        n = size(A)(1)
+    A[j,:] = A[j,:] - (multiplier * A[i,:])
+    return copy(A)
+end
+
+function MakeAugmentedForm(A::AbstractArray, b::AbstractArray)
+    ## Error Checking
+    A = Float64.(A)
+    b = Float64.(b)
+    if size(A)[1] == size(A)[2]
+        A = copy(hcat(A,b))
+        return A
     else
-        println("Matrix is not square, cannot perform Gauss Jordan")
-    end
-
-    # Reducing the matrix by taking making all values under the row a 0, so as to upper triangularize the system.
-    pivot = 0
-    target = 0
-    for j in range(n-1)
-        if abs(A[j,j])isapprox(0)
-            error("Zero Pivot Encountered")
-            break
-        end
-
-        for j+1 in range(n)
-            pivot = A[j,j]
-            target = A[j+1,j]
-            mult = target/pivot
-            A[j+1,:] = copy((mult)*A[i,:])
-        end
+        println("Matrix is not square! Exiting With Error Code -1")
+        return -1
     end
 end
 
-function GaussJordanPartialPivot(A::AbstractArray)
-    #Checking for square matrix
-    if size(A)(1) == size(A)(2)
-        n = size(A)(1)
-    else
-        println("Matrix is not square, cannot perform Gauss Jordan")
+function SwapRows(currentPivotRow, maxRow, A::DataType)
+    Dummy = copy(A[currentPivotRow,:])
+    A[currentPivotRow,:] = copy(A[maxRow,:])
+    A[maxRow,:] = copy(Dummy)
+    return A
+end
+
+function PartialPivot(i, A::AbstractArray)
+    # Finding Max Element
+    max = A[i,i]
+    maxRow = i
+    for row in range(i,size(A)[1])
+        if A[row,i] > max
+            max = A[row,i]
+            maxRow = row
+        end
     end
-    #Doing any exchanges so that the largest value for this diagonal exists in the a(j,j)th diagonal.
-    for i in range(n)
-        for j in range(n)
-            if A[i,j] > A[i,i]
-                #Swap
-                temp = copy(A[i,:])
-                A[i,:] = copy(A[j,:])
-                A[j,:] = copy(temp)
+    # Swap the Row with the Maximum Value with the current Pivot Row
+    A = copy(SwapRows(i,maxRow, A))
+end
+
+
+## Main Functions
+function NaiveGaussJordan(A::AbstractArray, b::AbstractArray)
+    A = Float64.(A)
+    b = Float64.(b)
+
+    A = copy(MakeAugmentedForm(A,b))
+    if A == -1
+        return
+    end
+    for i in range(1,size(A)[1])
+        for j in range(i+1, size(A)[1])
+            #Checking for 0's:
+            if A[j,i] != 0
+                EliminateRow(i,j,A)
+                #display(A)
+            else
+                #display(A)
+                continue
             end
         end
     end
+    return A
+end
 
-    # Reducing the matrix by taking making all values under the row a 0, so as to upper triangularize the system.
-    pivot = 0
-    target = 0
-    for j in range(n-1)
-        if abs(A[j,j])isapprox(0)
-            error("Zero Pivot Encountered")
-            break
-        end
+function GaussJordanPartialPivot(A::AbstractArray, b::AbstractArray)
+    A = Float64.(A)
+    b = Float64.(b)
 
-        for j+1 in range(n)
-            pivot = A[j,j]
-            target = A[j+1,j]
-            mult = target/pivot
-            A[j+1,:] = copy((mult)*A[i,:])
+    A = copy(MakeAugmentedForm(A,b))
+    if A == -1
+        return
+    end
+
+    for i in range(1,size(A)[1])
+        PartialPivot(i,A)
+        for j in range(i+1, size(A)[1])
+            #Checking for 0's:
+            if A[j,i] != 0
+                EliminateRow(i,j,A)
+            else
+                continue
+            end
         end
     end
+    return A
 end
 
 function JacobiMethod(A::AbstractArray)
@@ -69,4 +99,6 @@ end
 function GaussSedal(A::AbstractArray)
 end
 function SuccessiveOverRelaxation(A::AbstractArray, ω)
+end
+
 end
