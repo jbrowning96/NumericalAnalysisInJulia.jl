@@ -36,4 +36,10 @@ function newton_interpolation(x::Vector{Float64}, y::Vector{Float64}, xi::Float6
     return result
 end
 
+function natural_cubic_spline(x::Vector{Float64}, y::Vector{Float64})
+
+end
+
+function clamped_cubic_spline(x::Vector{Float64}, y::Vector{Float64})
+
 end

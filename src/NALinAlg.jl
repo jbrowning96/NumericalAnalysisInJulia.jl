@@ -1,97 +1,64 @@
 module NALinAlg
-# Many of these functions are already implemented, probably already in much better ways... We start by implementing them in the naive way and try to
-# Find better ways of doing the same procedure.
-
 using LinearAlgebra
-function EliminateRow(i,j, A::AbstractArray)
-    pivot = A[i,i]
-    target = A[j,i]
-    multiplier =  target/pivot
 
-    A[j,:] = A[j,:] - (multiplier * A[i,:])
-    return copy(A)
+function eliminate_row!(i, j, A::AbstractArray)
+    pivot = A[i, i]
+    target = A[j, i]
+    multiplier = target / pivot
+
+    A[j, :] .-= multiplier * A[i, :]
 end
 
-function MakeAugmentedForm(A::AbstractArray, b::AbstractArray)
-    ## Error Checking
+function make_augmented_form(A::AbstractArray, b::AbstractArray)
     A = Float64.(A)
     b = Float64.(b)
-    if size(A)[1] == size(A)[2]
-        A = copy(hcat(A,b))
-        return A
+
+    if size(A, 1) == size(A, 2)
+        return hcat(A, b)
     else
-        println("Matrix is not square! Exiting With Error Code -1")
-        return -1
+        error("Matrix is not square! Exiting With Error")
     end
 end
 
-function SwapRows(currentPivotRow, maxRow, A::DataType)
-    Dummy = copy(A[currentPivotRow,:])
-    A[currentPivotRow,:] = copy(A[maxRow,:])
-    A[maxRow,:] = copy(Dummy)
-    return A
+function swap_rows!(currentPivotRow, maxRow, A)
+    A[[currentPivotRow, maxRow], :] = A[[maxRow, currentPivotRow], :]
 end
 
-function PartialPivot(i, A::AbstractArray)
-    # Finding Max Element
-    max = A[i,i]
+function partial_pivot!(i, A::AbstractArray)
+    max = abs(A[i, i])
     maxRow = i
-    for row in range(i,size(A)[1])
-        if A[row,i] > max
-            max = A[row,i]
+
+    for row in i:size(A, 1)
+        if abs(A[row, i]) > max
+            max = abs(A[row, i])
             maxRow = row
         end
     end
-    # Swap the Row with the Maximum Value with the current Pivot Row
-    A = copy(SwapRows(i,maxRow, A))
+
+    swap_rows!(i, maxRow, A)
 end
 
+function gauss_jordan_partial_pivot(A::AbstractArray, b::AbstractArray)
+    A = make_augmented_form(A, b)
 
-## Main Functions
-function NaiveGaussJordan(A::AbstractArray, b::AbstractArray)
-    A = Float64.(A)
-    b = Float64.(b)
-
-    A = copy(MakeAugmentedForm(A,b))
-    if A == -1
-        return
-    end
-    for i in range(1,size(A)[1])
-        for j in range(i+1, size(A)[1])
-            #Checking for 0's:
-            if A[j,i] != 0
-                EliminateRow(i,j,A)
-                #display(A)
-            else
-                #display(A)
-                continue
-            end
+    for i in 1:size(A, 1)
+        partial_pivot!(i, A)
+        for j in (i + 1):size(A, 1)
+            eliminate_row!(i, j, A)
         end
     end
-    return A
-end
 
-function GaussJordanPartialPivot(A::AbstractArray, b::AbstractArray)
-    A = Float64.(A)
-    b = Float64.(b)
-
-    A = copy(MakeAugmentedForm(A,b))
-    if A == -1
-        return
-    end
-
-    for i in range(1,size(A)[1])
-        PartialPivot(i,A)
-        for j in range(i+1, size(A)[1])
-            #Checking for 0's:
-            if A[j,i] != 0
-                EliminateRow(i,j,A)
-            else
-                continue
-            end
+    for i in size(A, 1):-1:1
+        for j in (i - 1):-1:1
+            eliminate_row!(i, j, A)
         end
     end
-    return A
+
+    for i in 1:size(A, 1)
+        A[i, :] ./= A[i, i]
+    end
+
+    return A[:, end]
 end
 
 function JacobiMethod(A::AbstractArray)
